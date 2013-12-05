@@ -1,0 +1,7 @@
+schema.conf
+sqitch.conf
+NOTES.md
+app.development.json
+app.preview.json
+app.production.json
+*.DS_Store
