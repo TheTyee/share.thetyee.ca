@@ -6,7 +6,6 @@ use Shares::Schema;
 use Data::Dumper;
 use Try::Tiny;
 use Email::Valid;
-use Regexp::Common qw /profanity/;
 use HTML::Entities;
 
 plugin JSONP => callback => 'cb';
@@ -47,9 +46,6 @@ helper check_message_content => sub {
     my $self    = shift;
     my $message = shift;
     my @results;
-    if ( lc( $message ) =~ /$RE{profanity}/ ) {
-        push @results, 'Your message appears to contain profanity. Feel free to revise.';
-    };
     if ( $message eq '' ) {
         push @results, 'Message appears to contain no content';
     };
@@ -65,9 +61,21 @@ helper prepare_recipients => sub {
     my $recipients_str = shift;
     my $sender_str     = shift;
     my @emails         = $self->split_emails( $recipients_str );
+    @emails            = $self->check_and_fix_decoratives( \@emails );
     my @messages = map { email_to => trim( $_ ), email_from => $sender_str },
         @emails;
     return \@messages;
+};
+
+helper check_and_fix_decoratives => sub {
+    my $self = shift;
+    my $emails_orig = shift;
+    my @emails;
+    for my $email ( @$emails_orig ) {
+        my $r = Email::Valid->address( $email );
+        push @emails, $r;
+    }
+    return @emails;
 };
 
 helper prepare_events => sub {
@@ -99,7 +107,7 @@ helper split_emails => sub {
     return @emails;
 };
 
-sub trim {
+sub trim { # TODO replace with Mojo::Util qw( trim )
     my $string = shift;
     $string =~ s/^\s+//;
     $string =~ s/\s+$//;
