@@ -29,7 +29,6 @@ main();
 #  Subroutines
 #-------------------------------------------------------------------------------
 sub main {
-    say "In main...";
     my $dbh     = _dbh();
     my $records = _get_records( $dbh );
     _process_records( $records );
@@ -105,6 +104,7 @@ sub _create_or_update {   # Post the vitals to WhatCounts, return the resposne
     my %args = (
         r => $wc_realm,
         p => $wc_pw,
+        format => '2',
     );
     my $search_args = {
         %args,
