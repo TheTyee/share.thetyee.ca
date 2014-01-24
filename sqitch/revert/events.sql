@@ -1,7 +1,9 @@
--- Revert events
+-- Deploy events
 
 BEGIN;
 
-    DROP TABLE shares.event;
+    SET client_min_messages = 'warning';
+    
+    ALTER TABLE shares.event DROP COLUMN wc_status;
 
 COMMIT;

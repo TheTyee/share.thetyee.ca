@@ -101,6 +101,11 @@ __PACKAGE__->table("event");
   data_type: 'text'
   is_nullable: 1
 
+=head2 wc_status
+
+  data_type: 'text'
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -137,6 +142,8 @@ __PACKAGE__->add_columns(
   "wc_result_send",
   { data_type => "text", is_nullable => 1 },
   "wc_result_sub",
+  { data_type => "text", is_nullable => 1 },
+  "wc_status",
   { data_type => "text", is_nullable => 1 },
 );
 
@@ -176,8 +183,8 @@ __PACKAGE__->add_unique_constraint(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-11-28 16:06:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KIKzhRmH7VPyINISjA8QRQ
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2014-01-23 17:30:40
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:DkXTSucccloBxQNMIbak8g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

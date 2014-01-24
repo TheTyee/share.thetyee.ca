@@ -4,3 +4,5 @@
 
 schema 2013-12-01T19:11:45Z Phillip Smith <ps@phillipadsmith.com> # Add schema for all share objects
 events 2013-12-01T19:12:23Z Phillip Smith <ps@phillipadsmith.com> # Table to track share events
+@v0.1.1 2014-01-23T20:18:41Z Phillip Smith <ps@phillipadsmith.com> # Tag v0.1.1
+events [events@v0.1.1 schema] 2014-01-23T20:19:22Z Phillip Smith <ps@phillipadsmith.com># Add column for wc_status
