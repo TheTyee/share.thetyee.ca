@@ -15,10 +15,11 @@ my $config = plugin 'JSONConfig';
 my $ua = Mojo::UserAgent->new;
 
 # WhatCounts config
-my $API        = $config->{'wc_api_url'};
-my $wc_list_id = $config->{'wc_listid'};
-my $wc_realm   = $config->{'wc_realm'};
-my $wc_pw      = $config->{'wc_password'};
+my $API             = $config->{'wc_api_url'};
+my $wc_list_id      = $config->{'wc_list_id'};
+my $wc_realm        = $config->{'wc_realm'};
+my $wc_pw           = $config->{'wc_password'};
+my $wc_template_id  = $config->{'wc_template_id'};
 
 # Validation helpers
 helper check_emails => sub {
@@ -178,7 +179,7 @@ helper send_message => sub {
         from             => $from,
         reply_to_address => $from,
         errors_to        => $from,
-        template_id      => '132665',
+        template_id      => $wc_template_id,
         charset          => 'ISO-8859-1',
         data =>
             "from,title,url,image,summary,message^$from_quoted,$title,$url,$image,$summary,$message"
