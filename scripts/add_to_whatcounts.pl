@@ -122,12 +122,13 @@ sub _create_or_update {   # Post the vitals to WhatCounts, return the resposne
     }
     my $update_or_sub = {
         %args,
-
         # If we found a subscriber, it's an update, if not a subscribe
         cmd => $search ? 'update' : 'sub',
         list_id => $wc_list_id,
+        override_confirmation => '1',
+        force_sub => '1',
         data =>
-            "email,format,override_confirmation,force_sub,custom_share_import,$frequency,custom_share_sub_date^$email,2,1,1,1,1,$date"
+            "email,custom_share_import,$frequency,custom_share_sub_date^$email,1,1,$date"
     };
     my $tx = $ua->post( $API => form => $update_or_sub );
     if ( my $res = $tx->success ) {
