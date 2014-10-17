@@ -38,7 +38,7 @@ sub _get_records
 {    # Get only records that have not been processed from the database
     my $schema     = shift;
     my $to_process = $schema->resultset( 'Event' )
-        ->search( { 
+        ->search( {
                 wc_status => [ { '!=', '1' }, { '=', undef } ],
                 #wc_status => { '=', undef }
             } );
@@ -93,7 +93,6 @@ sub _determine_frequency
     return $frequency;
 }
 
-
 sub _create_or_update {   # Post the vitals to WhatCounts, return the resposne
     my $record          = shift;
     my $frequency       = shift;
@@ -128,7 +127,7 @@ sub _create_or_update {   # Post the vitals to WhatCounts, return the resposne
         cmd => $search ? 'update' : 'sub',
         list_id => $wc_list_id,
         data =>
-            "email,custom_share_import,$frequency,custom_share_sub_date^$email,1,1,$date"
+            "email,format,override_confirmation,force_sub,custom_share_import,$frequency,custom_share_sub_date^$email,2,1,1,1,1,$date"
     };
     my $tx = $ua->post( $API => form => $update_or_sub );
     if ( my $res = $tx->success ) {
