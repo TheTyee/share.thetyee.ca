@@ -128,7 +128,7 @@ sub _create_or_update {   # Post the vitals to WhatCounts, return the resposne
         override_confirmation => '1',
         force_sub => '1',
         data =>
-            "email,custom_share_import,$frequency,custom_share_sub_date^$email,1,1,$date"
+            "email,custom_share_import,$frequency,custom_share_sub_date,custom_pref_tyeenews_casl,custom_pref_sponsor_casl^$email,1,1,$date,1,1"
     };
     my $tx = $ua->post( $API => form => $update_or_sub );
     if ( my $res = $tx->success ) {
