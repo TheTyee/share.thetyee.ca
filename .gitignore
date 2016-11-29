@@ -5,3 +5,6 @@ app.development.json
 app.preview.json
 app.production.json
 *.DS_Store
+/cpanfile.snapshot
+/.perl-version
+/local
