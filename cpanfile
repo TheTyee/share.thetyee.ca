@@ -1,0 +1,9 @@
+requires 'Modern::Perl', '0';
+requires 'Mojolicious', '0';
+requires 'Mojolicious::Plugin::JSONP', '0';
+requires 'IO::Socket::SSL', '0';
+requires 'DBIx::Class', '0';
+requires 'DBIx::Class::TimeStamp', '0';
+requires 'Try::Tiny', '0';
+requires 'Email::Valid', '0';
+requires 'HTML::Entities', '0';
