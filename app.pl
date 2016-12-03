@@ -87,7 +87,7 @@ helper prepare_events => sub {
     for my $message ( @$messages ) {
         my $e = { %{$event} };    # Make a copy of the event
         $e->{'email_to'} = $message->{'email_to'};
-        push $events, $e;
+        push @$events, $e;
     }
     return $events;
 };
@@ -150,6 +150,7 @@ helper find_or_new => sub {
 helper send_message => sub {
     my $self   = shift;
     my $record = shift;
+    my $wc_template_id_override = shift;
     $self->stash( event => $record );
     my %wc_args = (
         r       => $wc_realm,
@@ -179,7 +180,7 @@ helper send_message => sub {
         from             => $from,
         reply_to_address => $from,
         errors_to        => $from,
-        template_id      => $wc_template_id,
+        template_id      => $wc_template_id_override || $wc_template_id, # TODO let this be set
         charset          => 'ISO-8859-1',
         data =>
             "from,title,url,image,summary,message^$from_quoted,$title,$url,$image,$summary,$message"
@@ -191,6 +192,8 @@ helper send_message => sub {
     }
     else {
         my ( $err, $code ) = $s->error;
+
+        $self->app->log->debug( Dumper($err, $code) );
         $result = $code ? "$code response: $err" : "Connection error: $err";
     }
     $record->wc_result_send( $result );
@@ -218,6 +221,8 @@ get '/send' => sub {
     my $email_to     = $params->{'email_to'};
     my $email_from   = $params->{'email_from'};
     my $wc_sub_pref  = $params->{'wc_sub_pref'};
+    my $wc_template_id_override = $params->{'wc_template_id'};
+    # TODO Let other uses change the template
     my $share_params = {
         url         => $url,
         title       => $title,
@@ -227,9 +232,9 @@ get '/send' => sub {
         email_from  => $email_from,
         wc_sub_pref => $wc_sub_pref,
     };
-    push $errors, 'Missing a selection for subscription preference.' if !$wc_sub_pref;
-    push $errors, $self->check_emails( $email_to, $email_from );
-    push $errors, $self->check_message_content( $message );
+    push @$errors, 'Missing a selection for subscription preference.' if !$wc_sub_pref;
+    push @$errors, $self->check_emails( $email_to, $email_from );
+    push @$errors, $self->check_message_content( $message );
     my $send_results = [];
     if ( !@$errors ) {
         my $messages = $self->prepare_recipients( $email_to, $email_from );
@@ -237,11 +242,11 @@ get '/send' => sub {
         my $results = [];
         for my $event ( @$events ) {
             my $result = $self->find_or_new( $event );
-            push $results, $result;
+            push @$results, $result;
         }
         for my $result ( @$results ) {
-            my $send_result = $self->send_message( $result );
-            push $send_results, $send_result;
+            my $send_result = $self->send_message( $result, $wc_template_id_override );
+            push @$send_results, $send_result;
         }
     }
     $self->stash(
@@ -258,6 +263,6 @@ get '/send' => sub {
         any  => { text     => '', status => 204 }
     );
 };
-app->secret( $config->{'app_secret'} );
+app->secrets([$config->{'app_secret'}]);
 app->start;
 __DATA__
