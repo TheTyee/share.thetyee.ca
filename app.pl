@@ -148,6 +148,30 @@ helper find_or_new => sub {
     return $result;
 };
 
+helper process_subscription_request => sub {
+    my $self = shift;
+    my $email = shift;
+    my $wc_sub_pref = shift;
+    my $sub_args = {
+        email => $email,
+        $wc_sub_pref => 1
+    };
+    my $result;
+    my $sub_req = $ua->post( $SUB_API => form => $sub_args );
+    if ( my $res = $sub_req->success ) {
+        $result = $res->body;
+    }
+    else {
+        # This is only errors connecting to the service,
+        # not errors from the service
+        my ( $err, $code ) = $sub_req->error;
+        $self->app->log->debug( Dumper($err, $code) );
+        $result = $code ? "$code response: $err" : "Connection error: $err";
+    }
+    #$self->app->log->debug( $result );
+    # Only return errors
+};
+
 # Send message event via WhatCounts
 helper send_message => sub {
     my $self   = shift;
