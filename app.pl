@@ -21,6 +21,7 @@ my $wc_list_id      = $config->{'wc_list_id'};
 my $wc_realm        = $config->{'wc_realm'};
 my $wc_pw           = $config->{'wc_password'};
 my $wc_template_id  = $config->{'wc_template_id'};
+my $SUB_API         = $config->{'sub_api_url'};
 
 # Validation helpers
 helper check_emails => sub {
