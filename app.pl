@@ -2,6 +2,7 @@
 use Modern::Perl '2013';
 use Mojolicious::Lite;
 use Mojo::Util qw(quote url_escape);
+use Mojo::JSON qw(decode_json encode_json);
 use Shares::Schema;
 use Data::Dumper;
 use Try::Tiny;
