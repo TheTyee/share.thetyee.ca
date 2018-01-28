@@ -91,6 +91,8 @@ helper prepare_events => sub {
         $e->{'email_to'} = $message->{'email_to'};
         push @$events, $e;
     }
+    # Here I could remove the sub request
+    $self->app->log->debug( Dumper( $events ));
     return $events;
 };
 
@@ -194,6 +196,7 @@ helper send_message => sub {
     my $image       = quote $record->img;
     my $summary     = quote $record->summary;
     my $message     = quote encode_entities( $record->message, '\n' );
+    my $wc_sub_pref = $record->wc_sub_pref;
     my $id          = $record->id;
     if ( $record->wc_result_send )
     {    # Already have a result for this record. Previously sent
@@ -223,11 +226,20 @@ helper send_message => sub {
         $result = $code ? "$code response: $err" : "Connection error: $err";
     }
     $record->wc_result_send( $result );
+
+    # Handle any subscription requests
+    my $sub_req_res = decode_json( $self->process_subscription_request( $from, $wc_sub_pref ) );
+    my $wc_result_sub = $sub_req_res->{'resultStr'};
+    $record->wc_result_sub( $wc_result_sub );
+    $record->wc_status( '1' );
+
+    # Save the record
     $record->update;
 
     #$self->app->log->debug( $result );
     return $result;
 };
+
 
 get '/' => sub {
     my $self   = shift;
