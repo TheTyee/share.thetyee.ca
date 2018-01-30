@@ -88,6 +88,9 @@ sub _determine_frequency
     elsif ( $subscription =~ /daily/i ) {
         $frequency = 'custom_pref_enews_daily';
     }
+    elsif ( $subscription =~ /daily/i ) {
+        $frequency = 'custom_pref_enews_national';
+    }
 
     # Return undefined for no frequency selection (thus, no subscription)
     return $frequency;
