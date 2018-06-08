@@ -8,7 +8,7 @@ use Try::Tiny;
 use Email::Valid;
 use HTML::Entities;
 
-plugin JSONP => callback => 'cb';
+plugin JSONP => callback => '';
 my $config = plugin 'JSONConfig';
 
 # Get a UserAgent
@@ -193,7 +193,7 @@ helper send_message => sub {
     else {
         my ( $err, $code ) = $s->error;
 
-        $self->app->log->debug( Dumper($err, $code) );
+      #  $self->app->log->debug( Dumper($err, $code) );
         $result = $code ? "$code response: $err" : "Connection error: $err";
     }
     $record->wc_result_send( $result );
@@ -210,6 +210,8 @@ get '/' => sub {
 
 get '/send' => sub {
     my $self         = shift;
+
+$self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca');
     my $errors       = [];
     my $params       = $self->req->params->to_hash;
     my $url          = $params->{'url'};
@@ -246,6 +248,7 @@ get '/send' => sub {
         }
         for my $result ( @$results ) {
             my $send_result = $self->send_message( $result, $wc_template_id_override );
+#	   $self->app->log->debug( "Send result: " .Dumper( $send_result ) );
             push @$send_results, $send_result;
         }
     }
@@ -254,15 +257,24 @@ get '/send' => sub {
         send_results => $send_results,
         errors       => $errors,
     );
+
+
+ #  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
+
+ #   $self->app->log->debug( "send_results: " .Dumper( $send_results) );
+
+
     $self->respond_to(
         json => sub {
             $self->render_jsonp(
                 { result => $send_results, errors => $errors } );
         },
         html => { template => 'index' },
-        any  => { text     => '', status => 204 }
+        any  => { text     => '',  status =>  200  }
     );
 };
+
+
 app->secrets([$config->{'app_secret'}]);
 app->start;
 __DATA__
