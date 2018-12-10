@@ -21,6 +21,7 @@ my $wc_realm        = $config->{'wc_realm'};
 my $wc_pw           = $config->{'wc_password'};
 my $wc_template_id  = $config->{'wc_template_id'};
 
+
 # Validation helpers
 helper check_emails => sub {
     my $self           = shift;
@@ -35,10 +36,16 @@ helper check_emails => sub {
     }
     for my $addr ( @emails ) {
         my $r = Email::Valid->address( $addr );
+        if ($addr =~ /qq|huawei|136|126/) { 
+			push @results,
+                "$addr appears to be abusing the form";
+		}
+        
         unless ( $r ) {
             push @results,
                 "$addr doesn't look like a properly formatted e-mail address.";
         }
+	
     }
     return @results;
 };
@@ -53,6 +60,12 @@ helper check_message_content => sub {
     if ( length( $message ) >= 1024 ) {
         push @results, 'Message is too long. Please keep it concise!'
     };
+   if ( $message =~ /qfg15/ ) {
+        push @results, 'Message seems spammy'
+    };
+
+
+
     return @results;
 };
 
@@ -173,6 +186,9 @@ helper send_message => sub {
     {    # Already have a result for this record. Previously sent
         return "This story and message to $to was previously sent by $from";
     }
+    
+
+    
     #$self->app->log->debug( $record->email_to );
     my $message_args = {
         %wc_args,
@@ -211,6 +227,8 @@ get '/' => sub {
 get '/send' => sub {
     my $self         = shift;
 
+   
+    
 $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca');
     my $errors       = [];
     my $params       = $self->req->params->to_hash;
@@ -258,8 +276,25 @@ $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca
         errors       => $errors,
     );
 
+    my $errmsg;
+if (@$errors)
+{
+    $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " " .Dumper( $errors ) . Dumper($share_params);
+    use MIME::Lite;
+### Create a new single-part message, to send a GIF file:
+ my $msg = MIME::Lite->new(
+    From     => 'MojoErrors@thetyee.ca',
+    To       => $config->{'errors_to_email'},
+    Subject  => 'Error from article share tool',
+    Data     =>  $errmsg
+);
+$msg->send; # send via default
+    
+ $self->app->log->debug ($errmsg );
+        
+    }
 
- #  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
+#  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
 
  #   $self->app->log->debug( "send_results: " .Dumper( $send_results) );
 
