@@ -7,6 +7,7 @@ use Data::Dumper;
 use Try::Tiny;
 use Email::Valid;
 use HTML::Entities;
+use MIME::Lite;
 
 plugin JSONP => callback => '';
 my $config = plugin 'JSONConfig';
@@ -227,8 +228,6 @@ get '/' => sub {
 get '/send' => sub {
     my $self         = shift;
 
-   
-    
 $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca');
     my $errors       = [];
     my $params       = $self->req->params->to_hash;
@@ -276,12 +275,11 @@ $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca
         errors       => $errors,
     );
 
+ #  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
     my $errmsg;
 if (@$errors)
 {
     $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " " .Dumper( $errors ) . Dumper($share_params);
-    use MIME::Lite;
-### Create a new single-part message, to send a GIF file:
  my $msg = MIME::Lite->new(
     From     => 'MojoErrors@thetyee.ca',
     To       => $config->{'errors_to_email'},
@@ -292,7 +290,18 @@ $msg->send; # send via default
     
  $self->app->log->debug ($errmsg );
         
-    }
+    } else {
+    
+    $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " " .Dumper( $errors ) . Dumper($share_params);
+ my $msg = MIME::Lite->new(
+    From     => 'MojoForwards@thetyee.ca',
+    To       => $config->{'errors_to_email'},
+    Subject  => 'New article shared',
+    Data     =>  $errmsg
+);
+$msg->send; # send via default
+    
+}
 
 #  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
 
