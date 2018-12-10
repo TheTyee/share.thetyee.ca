@@ -269,14 +269,8 @@ $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca
             push @$send_results, $send_result;
         }
     }
-    $self->stash(
-        share_params => $share_params,
-        send_results => $send_results,
-        errors       => $errors,
-    );
-
- #  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
-    my $errmsg;
+    
+       my $errmsg;
 if (@$errors)
 {
     $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " email to $email_to email from: $email_from " .Dumper( $errors ) . Dumper($share_params);
@@ -302,6 +296,17 @@ $msg->send; # send via default
 $msg->send; # send via default
     
 }
+    
+    
+    
+    $self->stash(
+        share_params => $share_params,
+        send_results => $send_results,
+        errors       => $errors,
+    );
+
+ #  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
+ 
 
 #  $self->app->log->debug( "errors result: " .Dumper( $errors ) );
 
