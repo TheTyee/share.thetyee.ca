@@ -279,7 +279,7 @@ $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca
     my $errmsg;
 if (@$errors)
 {
-    $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " " .Dumper( $errors ) . Dumper($share_params);
+    $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " email to $email_to email from: $email_from " .Dumper( $errors ) . Dumper($share_params);
  my $msg = MIME::Lite->new(
     From     => 'MojoErrors@thetyee.ca',
     To       => $config->{'errors_to_email'},
@@ -292,7 +292,7 @@ $msg->send; # send via default
         
     } else {
     
-    $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " " .Dumper( $errors ) . Dumper($share_params);
+    $errmsg = " IP address:  " . $self->req->headers->header('X-Forwarded-For') . " email to $email_to email from: $email_from" .Dumper( $errors ) . Dumper($share_params);
  my $msg = MIME::Lite->new(
     From     => 'MojoForwards@thetyee.ca',
     To       => $config->{'errors_to_email'},
