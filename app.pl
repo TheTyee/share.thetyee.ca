@@ -289,7 +289,7 @@ $msg->send; # send via default
         
     } else {
     
-    $errmsg = "ignore: $config->{'ignore_email'}  IP address:  " . $self->req->headers->header('X-Forwarded-For') . " email to $email_to email from: $email_from" .Dumper( $errors ) . Dumper($share_params);
+    $errmsg = "IP address:  " . $self->req->headers->header('X-Forwarded-For') . " email to $email_to email from: $email_from" .Dumper( $errors ) . Dumper($share_params);
  my $msg = MIME::Lite->new(
     From     => 'MojoForwards@thetyee.ca',
     To       => $config->{'errors_to_email'},
