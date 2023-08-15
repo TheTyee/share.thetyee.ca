@@ -8,6 +8,8 @@ use Mojo::UserAgent;
 use utf8::all;
 use Try::Tiny;
 use Data::Dumper;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
+
 
 # Get the configuration
 my $mode = $ARGV[0];
@@ -36,12 +38,14 @@ sub main {
 
 sub _get_records
 {    # Get only records that have not been processed from the database
+    say "getting records";
     my $schema     = shift;
     my $to_process = $schema->resultset( 'Event' )
         ->search( {
                 wc_status => [ { '!=', '1' }, { '=', undef } ],
                 #wc_status => { '=', undef }
             } );
+        say "processing  $to_process";
     return $to_process;
 }
 
@@ -88,7 +92,7 @@ sub _determine_frequency
     elsif ( $subscription =~ /daily/i ) {
         $frequency = 'custom_pref_enews_daily';
     }
-    elsif ( $subscription =~ /daily/i ) {
+    elsif ( $subscription =~ /national/i ) {
         $frequency = 'custom_pref_enews_national';
     }
 
@@ -100,6 +104,11 @@ sub _create_or_update {   # Post the vitals to WhatCounts, return the resposne
     my $record          = shift;
     my $frequency       = shift;
     my $email           = $record->email_from;
+    
+    
+         my $lcemail    = lc $email;
+   my $md5email = md5_hex ($lcemail); 
+    
     my $date            = $record->timestamp;
     my $search;
     my $result;
@@ -114,48 +123,90 @@ sub _create_or_update {   # Post the vitals to WhatCounts, return the resposne
         email => $email,
     };
 
-    # Get the subscriber record, if there is one already
-    my $s = $ua->post( $API => form => $search_args );
-    if ( my $res = $s->success ) {
-        $search = $res->body;
-    }
-    else {
-        my ( $err, $code ) = $s->error;
-        $result = $code ? "$code response: $err" : "Connection error: $err";
-    }
-    my $update_or_sub = {
-        %args,
-        # If we found a subscriber, it's an update, if not a subscribe
-        cmd => $search ? 'update' : 'sub',
-        list_id => $wc_list_id,
-        override_confirmation => '1',
-        force_sub => '1',
-        format    => '2',
-        data =>
-            "email,custom_share_import,$frequency,custom_share_sub_date,custom_pref_tyeenews_casl,custom_pref_sponsor_casl^$email,1,1,$date,1,1"
-    };
-    my $tx = $ua->post( $API => form => $update_or_sub );
-    if ( my $res = $tx->success ) {
-        $result = $res->body;
-    }
-    else {
-        my ( $err, $code ) = $tx->error;
-        $result = $code ? "$code response: $err" : "Connection error: $err";
-    }
+    
+    
+    
+    
+    my $ub = Mojo::UserAgent->new;
 
-# For some reason, WhatCounts doesn't return the subscriber ID on creation, so we search again.
-    if ( $result =~ /SUCCESS/ ) {
-        my $r = $ua->post( $API => form => $search_args );
-        if ( my $res = $r->success ) { $result = $res->body }
-        else {
-            my ( $err, $code ) = $r->error;
-            $result
-                = $code ? "$code response: $err" : "Connection error: $err";
-        }
-    }
+my $merge_fields = {
+    APPEAL => "email_share_tool",
+    P_T_CASL => 1
+};
+
+
+    
+my $interests = {};
+
+if ($frequency =~ /national/) { $interests -> {'34d456542c'} = \1 ; $merge_fields->{'P_S_CASL'} = 1; $interests -> {'5c17ad7674'} = \1 ; };
+if ($frequency =~ /daily/)  { $interests -> {'e96d6919a3'} = \1 ; $merge_fields->{'P_S_CASL'} = 1; $interests -> {'5c17ad7674'} = \1 ;};
+if ($frequency =~ /weekly/) {$interests -> {'7056e4ff8d'} = \1; $merge_fields->{'P_S_CASL'} = 1; $interests -> {'5c17ad7674'} = \1 ; };
+
+$interests -> {'3f212bb109'} = \1 ; #tyee news
+# $interests -> {'5c17ad7674'} = \1 ; # sponsor casl - not by default unless one above selected 
+
+# add to both casl specila newsletter prefs by default
+$email = lc $email;
+my $errorText;
+    # Post it to Mailchimp
+    my $args = {
+        email_address   => $email,
+        status =>       => 'subscribed',
+        status_if_new => 'subscribed',
+        merge_fields => $merge_fields,
+        interests => $interests
+    };
+    
+        my $URL = Mojo::URL->new('https://Bryan:' . $config->{"mc_key"} . '@us14.api.mailchimp.com/3.0/lists/' . $config->{"mc_listid"} . '/members/' . $md5email);
+    my $tx = $ua->put( $URL => json => $args );
+    my $js = $tx->result->json;
+     app->log->debug( "code" . $tx->res->code);
+   app->log->debug( Dumper( $js));
+   
+ $ub->post($config->{'notify_url_2'} => json => {text => "email $email added via email share tool with result from mailchimp: " . Dumper($js) }) unless $email eq 'api@thetyee.ca'; 
+
+
+# For some reason, WhatCountMAILCHIMPs doesn't return the subscriber ID on creation, so we search again.
+ if ($tx->res->code == 200 )
+   {     
+   
+        app->log->debug( "unique email id" .  $js->{'unique_email_id'});
+
+
 
     # Just the subscriber ID please!
-    $result =~ s/^(?<subscriber_id>\d+?)\s.*/$+{'subscriber_id'}/gi;
-    chomp( $result );
-    return $result;
+   # $result =~ s/^(?<subscriber_id>\d+?)\s.*/$+{'subscriber_id'}/gi;
+   # chomp( $result );
+    $result = $tx->result->body;
+        # Output response when debugging
+      #          app->log->debug( Dumper( $tx  ) );
+      #  app->log->debug( Dumper( $result ) );
+            if ( $result =~ 'subscribed' ) {
+            my $subscriberID = $js->{'unique_email_id'};
+            return $subscriberID;
+             }
+        
+    } else {
+        my ( $err, $code ) = $tx->error;
+        $result = $code ? "$code response: $err" : "Connection error: " . $err->{'message'};
+        # TODO this needs to notify us of a problem
+        app->log->debug( Dumper( $result ) );
+        # Send a 500 back to the request, along with a helpful message
+            $errorText = "error: "  . "status: " .  $js->{'status'} . " title: " .  $js->{'title'};
+	app->log->info( $errorText) unless $email eq 'api@thetyee.ca';
+            app->log->debug("error: "  . $errorText);
+           return ($errorText);
+
+    };
+    
 }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
