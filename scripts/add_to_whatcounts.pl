@@ -60,7 +60,9 @@ sub _process_records {    # Process each record
                                # Process the request
             $wc_response = _create_or_update( $record, $frequency );
             $record->wc_result_sub( $wc_response );
-            if ( $record->wc_result_sub =~ /^\d+$/ )
+ #           if ( $record->wc_result_sub =~ /^\d+$/ )
+             if ( $record->wc_result_sub)  # as long as anything is there
+
             {                  # We got back a subscriber ID, so we're good.
                                # Now mark the record as processed
                 $record->wc_status( 1 );
