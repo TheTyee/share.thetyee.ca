@@ -356,7 +356,6 @@ get '/send' => sub {
     my $self         = shift;
 
 $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca');
-$self->res->headers->header('Access-Control-Allow-Origin' => 'https://preview.thetyee.ca');
 
     my $errors       = [];
     my $params       = $self->req->params->to_hash;
