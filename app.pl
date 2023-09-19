@@ -8,6 +8,8 @@ use Try::Tiny;
 use Email::Valid;
 use HTML::Entities;
 use MIME::Lite;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
+
 
 plugin JSONP => callback => '';
 my $config = plugin 'JSONConfig';
@@ -165,6 +167,7 @@ helper send_message => sub {
     my $self   = shift;
     my $record = shift;
     my $wc_template_id_override = shift;
+    my $frequency = shift;
     $self->stash( event => $record );
     my %wc_args = (
         r       => $wc_realm,
@@ -217,7 +220,131 @@ helper send_message => sub {
     $record->update;
 
     #$self->app->log->debug( $result );
+    
+    
+    
+    #mcnew
+    
+        
+    my $ub = Mojo::UserAgent->new;
+
+my $merge_fields = {
+    APPEAL => "email_share_tool",
+    P_T_CASL => 1
+};
+
+
+    
+my $interests = {};
+
+#add them to mailchimp if applicable
+
+
+app->log->debug( "Frequency = " . $frequency ."\n");
+
+
+if ($frequency !~ /lready|thanks/  ) {
+
+if ($frequency =~ /national/) { $interests -> {'34d456542c'} = \1 ; $merge_fields->{'P_S_CASL'} = 1; $interests -> {'5c17ad7674'} = \1 ; }
+elsif ($frequency =~ /daily/)  { $interests -> {'e96d6919a3'} = \1 ; $merge_fields->{'P_S_CASL'} = 1; $interests -> {'5c17ad7674'} = \1 ;}
+elsif ($frequency =~ /weekly/) {$interests -> {'7056e4ff8d'} = \1; $merge_fields->{'P_S_CASL'} = 1; $interests -> {'5c17ad7674'} = \1 ; }
+else {}
+
+my $email = $from;
+$interests -> {'3f212bb109'} = \1 ; #tyee news
+# $interests -> {'5c17ad7674'} = \1 ; # sponsor casl - not by default unless one above selected 
+
+# add to both casl specila newsletter prefs by default
+my $lcemail = lc $email;
+my $md5email = md5_hex ($lcemail); 
+
+
+my $errorText;
+    # Post it to Mailchimp
+    my $args = {
+        email_address   => $from,
+        status =>       => 'subscribed',
+        status_if_new => 'subscribed',
+        merge_fields => $merge_fields,
+        interests => $interests
+    };
+    
+        my $URL = Mojo::URL->new('https://Bryan:' . $config->{"mc_key"} . '@us14.api.mailchimp.com/3.0/lists/' . $config->{"mc_listid"} . '/members/' . $md5email);
+    my $tx = $ua->put( $URL => json => $args );
+      app->log->debug( Dumper( $tx));
+    my $js = $tx->res->json;
+
+   app->log->debug( Dumper( $js));
+   
+     app->log->debug( "code" . $tx->res->code);
+   #app->log->debug( Dumper( $js));
+   
+ $ub->post($config->{'notify_url_2'} => json => {text => "email $email added via email share tool with result from mailchimp: " . Dumper($js) }) unless $email eq 'api@thetyee.ca'; 
+ $ub->post($config->{'notify_url'} => json => {text => "email $email added via email share tool"}) unless $email eq 'api@thetyee.ca'; 
+
+
+# For some reason, WhatCountMAILCHIMPs doesn't return the subscriber ID on creation, so we search again.
+ if ($tx->res->code == 200 )
+   {     
+   
+        app->log->debug( "unique email id" .  $js->{'unique_email_id'});
+
+
+
+    # Just the subscriber ID please!
+   # $result =~ s/^(?<subscriber_id>\d+?)\s.*/$+{'subscriber_id'}/gi;
+   # chomp( $result );
+    $result = $tx->res->body;
+        # Output response when debugging
+      #          app->log->debug( Dumper( $tx  ) );
+      #  app->log->debug( Dumper( $result ) );
+            if ( $result =~ 'subscribed' ) {
+            my $subscriberID = $js->{'unique_email_id'};
+            return $subscriberID;
+             }
+        
+    } else {
+        my ( $err, $code ) = $tx->error;
+        $result = $code ? "$code response: $err" : "Connection error: " . $err->{'message'};
+        # TODO this needs to notify us of a problem
+        app->log->debug( Dumper( $result ) );
+        # Send a 500 back to the request, along with a helpful message
+            $errorText = "error: "  . "status: " .  $js->{'status'} . " title: " .  $js->{'title'};
+	app->log->info( $errorText) unless $email eq 'api@thetyee.ca';
+            app->log->debug("error: "  . $errorText);
+           return ($errorText);
+
+    }
+} else {
+   
+   	app->log->info("User selected No thanks or Already Subscribed" );
+
+}
+    #mcnew
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     return $result;
+    
+    
+    
+    
+    
+    
+    
+    
 };
 
 get '/' => sub {
@@ -229,6 +356,8 @@ get '/send' => sub {
     my $self         = shift;
 
 $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca');
+$self->res->headers->header('Access-Control-Allow-Origin' => 'https://preview.thetyee.ca');
+
     my $errors       = [];
     my $params       = $self->req->params->to_hash;
     my $url          = $params->{'url'};
@@ -240,6 +369,7 @@ $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca
     my $email_to     = $params->{'email_to'};
     my $email_from   = $params->{'email_from'};
     my $wc_sub_pref  = $params->{'wc_sub_pref'};
+    my $frequency = $wc_sub_pref; #backwards compat
     my $wc_template_id_override = $params->{'wc_template_id'};
     # TODO Let other uses change the template
     my $share_params = {
@@ -264,7 +394,7 @@ $self->res->headers->header('Access-Control-Allow-Origin' => 'https://thetyee.ca
             push @$results, $result;
         }
         for my $result ( @$results ) {
-            my $send_result = $self->send_message( $result, $wc_template_id_override );
+            my $send_result = $self->send_message( $result, $wc_template_id_override, $frequency );
 #	   $self->app->log->debug( "Send result: " .Dumper( $send_result ) );
             push @$send_results, $send_result;
         }
@@ -316,7 +446,7 @@ $msg->send; # send via default
 
  #   $self->app->log->debug( "send_results: " .Dumper( $send_results) );
 
-
+$send_results = "SUCCESS: " . $send_results;
     $self->respond_to(
         json => sub {
             $self->render_jsonp(
