@@ -208,7 +208,8 @@ helper send_message => sub {
     # Get the subscriber record, if there is one already
     my $s = $ua->post( $API => form => $message_args );
     if ( my $res = $s->success ) {
-        $result = $res->body;
+     #   $result = $res->body;
+    $result = "Success, email will be send to $to";
     }
     else {
         my ( $err, $code ) = $s->error;
