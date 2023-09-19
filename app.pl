@@ -295,7 +295,7 @@ my $errorText;
     # Just the subscriber ID please!
    # $result =~ s/^(?<subscriber_id>\d+?)\s.*/$+{'subscriber_id'}/gi;
    # chomp( $result );
-    $result = $tx->res->body;
+    my $result2= $tx->res->body;
         # Output response when debugging
       #          app->log->debug( Dumper( $tx  ) );
       #  app->log->debug( Dumper( $result ) );
