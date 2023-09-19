@@ -446,7 +446,6 @@ $msg->send; # send via default
 
  #   $self->app->log->debug( "send_results: " .Dumper( $send_results) );
 
-$send_results = "SUCCESS: " . $send_results;
     $self->respond_to(
         json => sub {
             $self->render_jsonp(
