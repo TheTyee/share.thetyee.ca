@@ -209,7 +209,7 @@ helper send_message => sub {
     my $s = $ua->post( $API => form => $message_args );
     if ( my $res = $s->success ) {
      #   $result = $res->body;
-    $result = "Success, email will be send to $to";
+    $result = "Success, email will be sent to $to";
     }
     else {
         my ( $err, $code ) = $s->error;
